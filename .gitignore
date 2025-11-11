@@ -1,0 +1,20 @@
+# Directories
+.vs/
+bin/
+bin-int/
+
+*.log
+
+# Files
+*.user
+*.vcxproj
+*.filters
+*.sln
+*.json
+imgui.ini
+
+Makefile
+
+*.o
+*.tmp
+FridgeWeb.bat
