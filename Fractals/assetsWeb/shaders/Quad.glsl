@@ -1,5 +1,6 @@
 //type vertex
-#version 450 core
+#version 300 es
+precision mediump float;
 
 layout(location = 0) in vec3 a_Position;
 layout(location = 1) in vec4 a_Color;
@@ -24,7 +25,8 @@ void main()
 }//*/
 
 //type fragment
-#version 450 core
+#version 300 es
+precision mediump float;
 
 layout(location = 0) out vec4 color;
 
@@ -42,56 +44,18 @@ uniform vec2 u_offset;
 uniform int u_maxIter;
 uniform int u_SPP;
 
-
-
-struct DS { float hi; float lo; };
-// Convert float to DS
-DS floatToDS(float f) { return DS(f, 0.0); }
-// DS addition
-DS dsAdd(DS a, DS b)
-{
-    float s = a.hi + b.hi;
-    float v = s - a.hi;
-    float t = ((b.hi - v) + (a.hi - (s - v))) + a.lo + b.lo;
-    return DS(s, t);
-}
-// DS subtraction
-DS dsSub(DS a, DS b)
-{
-    float s = a.hi - b.hi;
-    float v = s - a.hi;
-    float t = ((-b.hi - v) + (a.hi - (s - v))) + a.lo - b.lo;
-    return DS(s, t);
-}
-// DS multiplication
-DS dsMul(DS a, DS b)
-{
-    float c11 = a.hi * b.hi;
-    float c21 = a.hi * b.lo + a.lo * b.hi;
-    float s = c11 + c21;
-    float t = c21 - (s - c11) + a.lo * b.lo;
-    return DS(s, t);
-}
-// DS squared
-DS dsSqr(DS a) { return dsMul(a, a); }
-// DS to float (approximate for coloring)
-float dsToFloat(DS a) { return a.hi + a.lo; }
-
-
-
-
 float sampleFractal(vec2 z)
 {
 	int i = 0;
 	float nu = 0.0;
-	const float escapeRadius = 4.0;
+	float escapeRadius = 4.0;
 	for (; i < u_maxIter; ++i)
 	{
 		// z = z^2 + c
-		const float x = z.x;
-		const float y = z.y;
-		const float x2 = x*x - y*y + u_c.x;
-		const float y2 = 2.0*x*y + u_c.y;
+		float x = z.x;
+		float y = z.y;
+		float x2 = x*x - y*y + u_c.x;
+		float y2 = 2.0*x*y + u_c.y;
 		z = vec2(x2, y2);
 
 		if(dot(z,z) > escapeRadius)
@@ -103,11 +67,11 @@ float sampleFractal(vec2 z)
 		}
 	}
 
-	const float it = float(i) + (1.0 - nu);
+	float it = float(i) + (1.0 - nu);
 	return it / float(u_maxIter);
 }
 
-const vec2 sampleOffsets[9] = vec2[](
+vec2 sampleOffsets[9] = vec2[](
     vec2(1.0/6.0, 1.0/6.0),
     vec2(3.0/6.0, 1.0/6.0),
     vec2(5.0/6.0, 1.0/6.0),

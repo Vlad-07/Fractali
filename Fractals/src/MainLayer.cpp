@@ -3,25 +3,39 @@
 
 MainLayer::MainLayer() : Layer("Main"), m_FractalRenderer(m_CamController)
 {
-}
-
-
-void MainLayer::OnAttach()
-{
-	Eis::Renderer2D::SetClearColor(glm::vec4(0.1f, 0.1f, 0.1f, 1.0f));
+	Eis::Application::Get().GetWindow().SetTitle("Fractali");
 	m_CamController.SetMinZoom(0.0f);
-	m_FractalRenderer.CreateCanvas(Eis::Application::Get().GetWindow().GetWidth(), Eis::Application::Get().GetWindow().GetHeight(), m_Sampling);
+	m_CamController.SetZoom(1.1f);
 }
 
 
-void MainLayer::OnUpdate(Eis::TimeStep ts)
+void MainLayer::Attach()
 {
-	// Compute
-	m_CamController.OnUpdate(ts);
+	Eis::Renderer2D::SetClearColor(glm::vec3(1, 0, 1));
+	m_CamController.SetMinZoom(0.0f);
+	m_CamController.SetZoom(1.1f);
+}
 
-	m_FractalRenderer.Compute(m_Constant, m_MaxIt);
 
-	// Rendering
+void MainLayer::Update(Eis::TimeStep ts)
+{
+	m_CamController.Update(ts);
+
+	// Mouse panning
+	if (Eis::Input::IsMouseButtonPressed(EIS_MOUSE_BUTTON_0) && !ImGui::GetIO().WantCaptureMouse)
+	{
+		m_CamController.SetPosition(m_CamClickOrigin); // HACK: next CalculateMouseWorldPos must use initial vp matrix
+		m_CamController.SetPosition(m_CamClickOrigin + m_MouseClickOrigin - m_CamController.CalculateMouseWorldPos());
+	}
+
+	if (m_MouseInput)
+		m_Constant = m_CamController.CalculateMouseWorldPos() / 2.0f;
+
+	m_FractalRenderer.SetParams(m_Constant, m_MaxIt, (uint8_t)m_Sampling, m_CamController.GetZoom());
+}
+
+void MainLayer::Render()
+{
 	Eis::Renderer2D::Clear();
 	Eis::Renderer2D::ResetStats();
 	Eis::Renderer2D::BeginScene(m_CamController.GetCamera());
@@ -31,39 +45,36 @@ void MainLayer::OnUpdate(Eis::TimeStep ts)
 	Eis::Renderer2D::EndScene();
 }
 
-void MainLayer::OnImGuiRender()
+void MainLayer::ImGuiRender()
 {
 	ImGui::Begin("Julia Set");
 
-	ImGui::SliderFloat("Sampling", &m_Sampling, 0.1f, 2.0f);
-	// Update sampling
-	m_FractalRenderer.CreateCanvas(Eis::Application::Get().GetWindow().GetWidth(), Eis::Application::Get().GetWindow().GetHeight(), m_Sampling);
+	ImGui::DragFloat2("Constant", (float*)&m_Constant, 0.0005f, -5.0f, 5.0f);
+	ImGui::SliderInt("Detail", (int*)&m_MaxIt, 50, 1000);
+	ImGui::SliderInt("Sampling", &m_Sampling, 1, 9);
+	ImGui::Checkbox("Mouse Input", &m_MouseInput);
+	ImGui::SameLine();
+	if (ImGui::Button("Reset Camera"))
+	{
+		m_CamController.SetPosition(glm::vec2());
+		m_CamController.SetZoom(1.1f);
+	}
 
-	ImGui::DragFloat2("Constant", (float*)&m_Constant, 0.0005f, -2.0f, 2.0f);
-	ImGui::SliderInt("Detail", (int*)&m_MaxIt, 50, 300);
+	static uint8_t toLoad = 0;
+	for (uint8_t i = 1; i < s_FractalLib.size() + 1; i++)
+	{
+		if (ImGui::Button(std::to_string(i).c_str())) toLoad = i;
+		ImGui::SameLine();
+	}
 
-	uint8_t toLoad = 0;
-	if (ImGui::Button("1")) toLoad = 1;
-	ImGui::SameLine();
-	if (ImGui::Button("2")) toLoad = 2;
-	ImGui::SameLine();
-	if (ImGui::Button("3")) toLoad = 3;
-	ImGui::SameLine();
-	if (ImGui::Button("4")) toLoad = 4;
-	ImGui::SameLine();
-	if (ImGui::Button("5")) toLoad = 5;
-	ImGui::SameLine();
-	if (ImGui::Button("6")) toLoad = 6;
-	ImGui::SameLine();
-	if (ImGui::Button("7")) toLoad = 7;
-	ImGui::SameLine();
-	if (ImGui::Button("8")) toLoad = 8;
-
-	if (toLoad > 0 && toLoad < s_FractalLib.size())
+	if (toLoad > 0 && toLoad < s_FractalLib.size() + 1)
 	{
 		m_Constant = s_FractalLib[toLoad - 1].first;
 		m_MaxIt = s_FractalLib[toLoad - 1].second;
 		toLoad = 0;
+
+		m_CamController.SetPosition(glm::vec2());
+		m_CamController.SetZoom(1.1f);
 	}
 
 	ImGui::End();
@@ -72,11 +83,18 @@ void MainLayer::OnImGuiRender()
 void MainLayer::OnEvent(Eis::Event& e)
 {
 	m_CamController.OnEvent(e);
+	m_FractalRenderer.OnEvent(e);
 
 	Eis::EventDispatcher d(e);
-	d.Dispatch<Eis::WindowResizeEvent>([&](Eis::WindowResizeEvent& e) -> bool
+	d.Dispatch<Eis::MouseButtonPressedEvent>([&](Eis::MouseButtonPressedEvent& e) -> bool
 	{
-		m_FractalRenderer.CreateCanvas(e.GetWidth(), e.GetHeight(), m_Sampling);
+		if (e.GetMouseButton() == EIS_MOUSE_BUTTON_0)
+		{
+			m_MouseClickOrigin = m_CamController.CalculateMouseWorldPos();
+			m_CamClickOrigin = m_CamController.GetPosition();
+		}
+		else if (e.GetMouseButton() == EIS_MOUSE_BUTTON_1)
+			m_MouseInput = !m_MouseInput;
 		return false;
 	});
 }

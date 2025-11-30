@@ -1,6 +1,19 @@
 #include "FractalRenderer.h"
 
+#include <Eis/Rendering/Renderer/Renderer2D.h>
 
+
+FractalRenderer::FractalRenderer(const Eis::OrthoCameraController& cam) : m_SceneCam(cam)
+{
+	m_Shader = Eis::Renderer2D::GetQuadShader();
+
+	m_Shader->Bind();
+	m_Shader->SetFloat2("u_resolution", { (float)Eis::Application::Get().GetWindow().GetWidth(),
+											(float)Eis::Application::Get().GetWindow().GetHeight() });
+	m_Shader->SetFloat("u_zoom", 1.1f);
+}
+
+/*
 void FractalRenderer::CreateCanvas(uint32_t width, uint32_t height, float samplesPerPixel)
 {
 	if (m_Canvas)
@@ -23,35 +36,73 @@ void FractalRenderer::CreateCanvas(uint32_t width, uint32_t height, float sample
 	m_Canvas->SetData(m_Buffer, m_BufSize);
 
 	m_Computed = false;
-}
+}//*/
 
 
-void FractalRenderer::Compute(glm::dvec2 constant, uint32_t maxIt)
+void FractalRenderer::SetParams(glm::dvec2 constant, uint32_t maxIt, uint8_t spp, float zoom)
 {
-	if (constant == m_Constant && maxIt == m_MaxIt)
-		m_Computed = false;
+//	if (constant == m_Constant && maxIt == m_MaxIt)
+//		m_Computed = false;
 
-	if (m_Computed)
-		return;
+//	if (m_Computed)
+//		return;
 
-	m_Constant = constant;
-	m_MaxIt = maxIt;
+	m_Shader->Bind();
 
-	const float scale = m_SceneCam.GetZoom() / (float)m_Canvas->GetHeight();
-	ComputeRegion(m_Buffer, 0, m_Canvas->GetWidth(), m_SceneCam.GetPosition(), m_Constant, m_MaxIt, scale, glm::vec2(m_Canvas->GetWidth(), m_Canvas->GetHeight()));
+	if (constant != m_Constant)
+	{
+		m_Constant = constant;
+		m_Shader->SetFloat2("u_c", m_Constant);
+	}
+
+	if (maxIt != m_MaxIt)
+	{
+		m_MaxIt = maxIt;
+		m_Shader->SetInt("u_maxIter", m_MaxIt);
+	}
+
+	if (spp != m_SamplesPerPixel)
+	{
+		m_SamplesPerPixel = spp;
+		m_Shader->SetInt("u_SPP", m_SamplesPerPixel);
+	}
+
+	if (zoom != m_Zoom)
+	{
+		m_Zoom = zoom;
+		m_Shader->SetFloat("u_zoom", m_Zoom);
+	}
+
+
+//	const float scale = m_SceneCam.GetZoom() / (float)m_Canvas->GetHeight();
+//	ComputeRegion(m_Buffer, 0, m_Canvas->GetWidth(), m_SceneCam.GetPosition(), m_Constant, m_MaxIt, scale, glm::vec2(m_Canvas->GetWidth(), m_Canvas->GetHeight()));
 
 //	m_WorkGroup.Dispatch();
 //	m_WorkGroup.JoinAll();
 
-	m_Canvas->SetData((void*)m_Buffer, m_BufSize);
+//	m_Canvas->SetData((void*)m_Buffer, m_BufSize);
 }
 
 void FractalRenderer::Render() const
 {
-	Eis::Renderer2D::DrawQuad(m_SceneCam.GetPosition(), glm::vec2(2.0f * m_SceneCam.GetAspectRatio(), 2.0f) * m_SceneCam.GetZoom(), m_Canvas);
+	m_Shader->Bind();
+	m_Shader->SetFloat2("u_offset", m_SceneCam.GetPosition());
+
+	Eis::Renderer2D::DrawQuad(m_SceneCam.GetPosition(), glm::vec2(2.0f * m_SceneCam.GetAspectRatio(), 2.0f) * m_SceneCam.GetZoom(), glm::vec4(1.0f));
 }
 
+void FractalRenderer::OnEvent(Eis::Event& e)
+{
+	Eis::EventDispatcher d(e);
+	d.Dispatch<Eis::WindowResizeEvent>([&](Eis::WindowResizeEvent& e) -> bool
+	{
+		m_Shader->Bind();
+		m_Shader->SetFloat2("u_resolution", { (float)e.GetWidth() , (float)e.GetHeight() });
+		return false;
+	});
+}
 
+/*
 glm::dvec2 FractalRenderer::ComputeNextIt(glm::dvec2 current, glm::dvec2 constant)
 {
 	// current ^ 2
@@ -93,4 +144,4 @@ void FractalRenderer::ComputeRegion(uint8_t* buffer, uint32_t startCol, uint32_t
 	for (uint32_t col = startCol; col < startCol + colNr && col < size.y; col++)
 		for (uint32_t line = 0; line < size.x; line++)
 			ComputeToBuffer(buffer, { line, col }, pos, constant, maxIt, scale, size);
-}
+}//*/

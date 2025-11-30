@@ -12,28 +12,33 @@ public:
 	MainLayer();
 	virtual ~MainLayer() = default;
 
-	virtual void OnAttach() override;
+	virtual void Attach() override;
 
-	virtual void OnUpdate(Eis::TimeStep ts) override;
-	virtual void OnImGuiRender() override;
+	virtual void Update(Eis::TimeStep ts) override;
+	virtual void Render() override;
+	virtual void ImGuiRender() override;
 	virtual void OnEvent(Eis::Event& e) override;
 
 private:
 	Eis::OrthoCameraController m_CamController;
 	FractalRenderer m_FractalRenderer;
 
-	glm::dvec2 m_Constant = glm::dvec2(-0.209, 0.696);
+	glm::vec2 m_Constant = glm::vec2(-0.209, 0.696);
 	uint32_t m_MaxIt = 500;
-	float m_Sampling = 0.5f;
+	int m_Sampling = 4;
+	bool m_MouseInput = false;
 
-	inline static const std::array s_FractalLib{
-		std::make_pair(glm::dvec2(-0.209f, 0.696f), 200),
-		std::make_pair(glm::dvec2(-0.4f, 0.6f), 200),
-		std::make_pair(glm::dvec2(-0.02f, 0.79f), 150),
-		std::make_pair(glm::dvec2(-0.8f, 0.156f), 500),
-		std::make_pair(glm::dvec2(0.35f, 0.358f), 500),
-		std::make_pair(glm::dvec2(-0.21f, 0.79f), 400),
-		std::make_pair(glm::dvec2(0.407f, 0.306f), 100),
-		std::make_pair(glm::dvec2(-1.166f, -0.259f), 100)
+	glm::vec2 m_MouseClickOrigin{};
+	glm::vec2 m_CamClickOrigin{};
+
+	inline static const std::array s_FractalLib {
+		std::make_pair(glm::vec2(-0.209, 0.696), 500),
+		std::make_pair(glm::vec2(-0.4, 0.6), 200),
+		std::make_pair(glm::vec2(-0.02, 0.79), 150),
+		std::make_pair(glm::vec2(-0.8, 0.156), 500),
+		std::make_pair(glm::vec2(0.36, 0.358), 200),
+		std::make_pair(glm::vec2(-0.21, 0.79), 400),
+		std::make_pair(glm::vec2(0.407, 0.306), 100),
+		std::make_pair(glm::vec2(-1.166, 0.188), 1000)
 	};
 };
