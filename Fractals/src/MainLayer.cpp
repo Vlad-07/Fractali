@@ -6,8 +6,6 @@ MainLayer::MainLayer() : Layer("Main"), m_FractalRenderer(m_CamController)
 	Eis::Application::Get().GetWindow().SetTitle("Fractali");
 	m_CamController.SetMinZoom(0.0f);
 	m_CamController.SetZoom(1.1f);
-
-	EIS_INFO("Asstets folder exists: {0}", std::filesystem::exists("./assets"));
 }
 
 

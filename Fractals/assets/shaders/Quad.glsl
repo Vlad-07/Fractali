@@ -84,14 +84,14 @@ float sampleFractal(vec2 z)
 {
 	int i = 0;
 	float nu = 0.0;
-	const float escapeRadius = 4.0;
+	float escapeRadius = 4.0;
 	for (; i < u_maxIter; ++i)
 	{
 		// z = z^2 + c
-		const float x = z.x;
-		const float y = z.y;
-		const float x2 = x*x - y*y + u_c.x;
-		const float y2 = 2.0*x*y + u_c.y;
+		float x = z.x;
+		float y = z.y;
+		float x2 = x*x - y*y + u_c.x;
+		float y2 = 2.0*x*y + u_c.y;
 		z = vec2(x2, y2);
 
 		if(dot(z,z) > escapeRadius)
@@ -103,11 +103,11 @@ float sampleFractal(vec2 z)
 		}
 	}
 
-	const float it = float(i) + (1.0 - nu);
+	float it = float(i) + (1.0 - nu);
 	return it / float(u_maxIter);
 }
 
-const vec2 sampleOffsets[9] = vec2[](
+vec2 sampleOffsets[9] = vec2[](
     vec2(1.0/6.0, 1.0/6.0),
     vec2(3.0/6.0, 1.0/6.0),
     vec2(5.0/6.0, 1.0/6.0),
