@@ -1,12 +1,12 @@
 //type vertex
-#version 300 es
+#version 100
 precision mediump float;
 
-layout(location = 0) in vec3 a_Position;
-layout(location = 1) in vec4 a_Color;
-layout(location = 2) in vec2 a_TexCoord;
-layout(location = 3) in float a_TexIndex;
-layout(location = 4) in float a_TilingFactor;
+attribute vec3 a_Position;
+attribute vec4 a_Color;
+attribute vec2 a_TexCoord;
+attribute float a_TexIndex;
+attribute float a_TilingFactor;
 
 uniform mat4 u_VP;
 
@@ -25,15 +25,9 @@ void main()
 }//*/
 
 //type fragment
-#version 300 es
+#version 100
 precision mediump float;
 
-layout(location = 0) out vec4 color;
-
-//in vec4 v_Color;
-//in vec2 v_TexCoord;
-//in float v_TexIndex;
-//in float v_TilingFactor;
 
 uniform sampler2D u_Textures[32];
 
@@ -44,13 +38,16 @@ uniform vec2 u_offset;
 uniform int u_maxIter;
 uniform int u_SPP;
 
+const int MAX_ITER = 1000;
+
 float sampleFractal(vec2 z)
 {
-	int i = 0;
+	int i = u_maxIter;
 	float nu = 0.0;
 	float escapeRadius = 4.0;
-	for (; i < u_maxIter; ++i)
+	for (int it = 0; it < MAX_ITER; it++)
 	{
+		if (it >= u_maxIter) break;
 		// z = z^2 + c
 		float x = z.x;
 		float y = z.y;
@@ -63,28 +60,25 @@ float sampleFractal(vec2 z)
 			// smooth iteration count
 			float log_zn = 0.5 * log(float(dot(z,z)));
 			nu = log(log_zn / log(escapeRadius)) / log(2.0);
+			i = it;
 			break;
 		}
 	}
 
-	float it = float(i) + (1.0 - nu);
-	return it / float(u_maxIter);
+	float t = float(i) + (1.0 - nu);
+	return t / float(u_maxIter);
 }
 
-vec2 sampleOffsets[9] = vec2[](
-    vec2(1.0/6.0, 1.0/6.0),
-    vec2(3.0/6.0, 1.0/6.0),
-    vec2(5.0/6.0, 1.0/6.0),
-    vec2(1.0/6.0, 3.0/6.0),
-    vec2(3.0/6.0, 3.0/6.0),
-    vec2(5.0/6.0, 3.0/6.0),
-    vec2(1.0/6.0, 5.0/6.0),
-    vec2(3.0/6.0, 5.0/6.0),
-    vec2(5.0/6.0, 5.0/6.0)
-);
+const int MAX_SPP = 4;
+vec2 sampleOffsets[MAX_SPP];
 
 void main()
 {
+	sampleOffsets[0] = vec2(1.0/4.0, 1.0/4.0) * u_zoom * 0.001;
+    sampleOffsets[1] = vec2(3.0/4.0, 1.0/4.0) * u_zoom * 0.001;
+    sampleOffsets[2] = vec2(1.0/4.0, 3.0/4.0) * u_zoom * 0.001;
+    sampleOffsets[3] = vec2(3.0/4.0, 3.0/4.0) * u_zoom * 0.001;
+
 	vec2 uv = gl_FragCoord.xy / u_resolution;
 	uv = uv * 2.0 - 1.0;
 	uv.x *= u_resolution.x / u_resolution.y;
@@ -92,11 +86,12 @@ void main()
 	uv *= u_zoom;
 
 	float s = 0.0;
-	for (int i = 0; i < u_SPP; i++)
+	for (int i = 0; i < MAX_SPP; i++)
 	{
-		s += sampleFractal((uv + sampleOffsets[i % 9] * u_zoom * 0.001));
+		if (i >= u_SPP) break;
+		s += sampleFractal((uv + sampleOffsets[i]));
 	}
 	s /= float(u_SPP);
-	
-	color = vec4(s, s, s, 1.0);
+
+	gl_FragColor = vec4(s, s, s, 1.0);
 }

@@ -1,6 +1,7 @@
 #include "MainLayer.h"
 #include <filesystem>
 
+
 MainLayer::MainLayer() : Layer("Main"), m_FractalRenderer(m_CamController)
 {
 	Eis::Application::Get().GetWindow().SetTitle("Fractali");
@@ -51,7 +52,7 @@ void MainLayer::ImGuiRender()
 
 	ImGui::DragFloat2("Constant", (float*)&m_Constant, 0.0005f, -5.0f, 5.0f);
 	ImGui::SliderInt("Detail", (int*)&m_MaxIt, 50, 1000);
-	ImGui::SliderInt("Sampling", &m_Sampling, 1, 9);
+	ImGui::SliderInt("Sampling", &m_Sampling, 1, 4);
 	ImGui::Checkbox("Mouse Input", &m_MouseInput);
 	ImGui::SameLine();
 	if (ImGui::Button("Reset Camera"))
